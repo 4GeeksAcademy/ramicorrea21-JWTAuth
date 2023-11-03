@@ -63,6 +63,11 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0 # avoid cache memory
     return response
 
+@app.route('/health_check', methods=['GET'])
+def health_check():
+    return jsonify({"message": "app running correctly"}), 200
+
+
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
