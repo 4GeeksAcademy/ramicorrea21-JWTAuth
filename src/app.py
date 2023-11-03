@@ -7,10 +7,11 @@ from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.models import db, User
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+from werkzeug.security import generate_password_hash, check_password_hash
 
 #from models import Person
 
@@ -63,11 +64,28 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0 # avoid cache memory
     return response
 
-@app.route('/health_check', methods=['GET'])
-def health_check():
-    return jsonify({"message": "app running correctly"}), 200
+@app.route('/singup', methods=['POST'])
+def post_user():
+    body = request.json
+    email =  body.get('email')
+    password = body.get('password')
 
-
+    if email is None or password is None:
+        return jsonify({"message": "bad credentials"})
+    
+    userExists = User.query.filter_by(email=email).first()
+    if userExists:
+        return({"message": "user already exists"}), 400
+    else:
+        password = generate_password_hash(password)
+        user = User(email=email, password=password)
+        db.session.add(user)
+    try:
+        db.session.commit()
+        return jsonify({"message", "user created successfully"}), 201
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({"error": f"{error}"}), 500
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
